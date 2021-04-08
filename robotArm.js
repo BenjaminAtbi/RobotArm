@@ -33,12 +33,13 @@ var vertexColors = [
 
 // Parameters controlling the size of the Robot's arm
 
-var BASE_HEIGHT      = 2.0;
-var BASE_WIDTH       = 5.0;
-var LOWER_ARM_HEIGHT = 5.0;
-var LOWER_ARM_WIDTH  = 0.5;
-var UPPER_ARM_HEIGHT = 5.0;
-var UPPER_ARM_WIDTH  = 0.5;
+var BASE_HEIGHT      = 0.5;
+var BASE_WIDTH       = 0.5;
+var LOWER_ARM_HEIGHT = 2.0;
+var LOWER_ARM_WIDTH  = 0.3;
+var UPPER_ARM_HEIGHT = 2.0;
+var UPPER_ARM_WIDTH  = 0.3;
+
 
 // Shader transformation matrices
 
