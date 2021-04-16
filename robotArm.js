@@ -50,14 +50,13 @@ var UPPER_ARM_WIDTH  = 0.3;
 
 // Shader transformation matrices
 
-var modelViewMatrix, projectionMatrix;
+var modelViewMatrix, projectionMatrixTop, projectionMatrixSide;
 
 // Array of rotation angles (in degrees) for each rotation axis
 
 var Base = 0;
 var LowerArm = 1;
 var UpperArm = 2;
-
 
 var theta= [ 0, 0, 0];
 
@@ -66,6 +65,8 @@ var angle = 0;
 var modelViewMatrixLoc;
 
 var vBuffer, cBuffer, nBuffer;
+
+var TOPVIEW = false;
 
 //----------------------------------------------------------------------------
 
@@ -276,7 +277,7 @@ window.onload = function init() {
     var cameraPosition = gl.getUniformLocation(program, "cameraPos");
     gl.uniform3fv(cameraPosition, flatten(normalize(cameraPos)));
 
-    //define sliders
+    //define event listeners
     document.getElementById("slider1").oninput = function(event) {
         theta[0] = event.target.value;
     };
@@ -286,12 +287,16 @@ window.onload = function init() {
     document.getElementById("slider3").oninput = function(event) {
          theta[2] =  event.target.value;
     };
+    document.getElementById("viewButton").onclick = swapView;
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
+    
+    projectionMatrixSide = ortho(-5, 5, -5, 5, -10, 10);
+    var r = rotate(90,1,0,0);
+    projectionMatrixTop = mult(projectionMatrixSide,r);
 
-    projectionMatrix = ortho(-5, 5, -5, 5, -10, 10);
-    //projectionMatrix = ortho(-5, 5, -5, 5, -10, 10);
-    gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrix) );
+    //projectionMatrix = perspective(90,1,0,5);
+    gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixSide) );
 
     render();
 }
@@ -346,8 +351,6 @@ function lowerArm()
 
 var render = function() {
 
-    
-
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
     modelViewMatrix = rotate(theta[Base], 0, 1, 0 );
@@ -364,3 +367,12 @@ var render = function() {
     requestAnimFrame(render);
 }
 
+function swapView() {
+    if(TOPVIEW){
+        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixSide));
+        TOPVIEW = false;
+    } else {
+        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixTop));
+        TOPVIEW = true;
+    }
+}
