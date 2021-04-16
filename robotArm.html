@@ -1,10 +1,14 @@
 <!DOCTYPE html>
 <html>
+<meta charset="utf-8"/>
 
 <script id="vertex-shader" type="x-shader/x-vertex">
 attribute  vec4 vPosition;
-attribute  vec4 vColor;
-varying vec4 fColor;
+attribute  vec3 vColor;
+attribute  vec3 vNormal;
+
+varying vec3 fColor;
+varying vec3 fNormal;
 
 uniform mat4 modelViewMatrix;
 uniform mat4 projectionMatrix;
@@ -12,6 +16,7 @@ uniform mat4 projectionMatrix;
 void main()
 {
     fColor = vColor;
+    fNormal = mat3(modelViewMatrix) * vNormal;
     gl_Position = projectionMatrix * modelViewMatrix * vPosition;
 }
 </script>
@@ -19,12 +24,20 @@ void main()
 <script id="fragment-shader" type="x-shader/x-fragment">
 
 precision mediump float;
+varying vec3 fColor;
+varying vec3 fNormal;
 
-varying  vec4 fColor;
+uniform vec3 lightPosition;
+uniform float lightColor;
 
 void main()
 {
-    gl_FragColor = fColor;
+    //turn normal back into unit vector
+    vec3 normal = normalize(fNormal);
+    float light = dot(normal, lightPosition);
+    
+    gl_FragColor = vec4(0.5 * fColor + fColor * light, 1.0);
+    //gl_FragColor
 }
 </script>
 

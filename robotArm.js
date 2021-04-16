@@ -4,8 +4,12 @@ var canvas, gl, program;
 
 var NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
+var NumSides = 6; //number of side on cylinder
+
 var points = [];
 var colors = [];
+var normals = [];
+var lightsource = [];
 
 var vertices = [
     vec4( -0.5, -0.5,  0.5, 1.0 ),
@@ -18,16 +22,18 @@ var vertices = [
     vec4(  0.5, -0.5, -0.5, 1.0 )
 ];
 
+
+
 // RGBA colors
 var vertexColors = [
-    vec4( 0.0, 0.0, 0.0, 1.0 ),  // black
-    vec4( 1.0, 0.0, 0.0, 1.0 ),  // red
-    vec4( 1.0, 1.0, 0.0, 1.0 ),  // yellow
-    vec4( 0.0, 1.0, 0.0, 1.0 ),  // green
-    vec4( 0.0, 0.0, 1.0, 1.0 ),  // blue
-    vec4( 1.0, 0.0, 1.0, 1.0 ),  // magenta
-    vec4( 1.0, 1.0, 1.0, 1.0 ),  // white
-    vec4( 0.0, 1.0, 1.0, 1.0 )   // cyan
+    vec3( 0.0, 0.0, 0.0 ),  // black
+    vec3( 1.0, 0.0, 0.0 ),  // red
+    vec3( 1.0, 1.0, 0.0 ),  // yellow
+    vec3( 0.0, 1.0, 0.0 ),  // green
+    vec3( 0.0, 0.0, 1.0 ),  // blue
+    vec3( 1.0, 0.0, 1.0 ),  // magenta
+    vec3( 1.0, 1.0, 1.0 ),  // white
+    vec3( 0.0, 1.0, 1.0 )   // cyan
 ];
 
 
@@ -58,35 +64,115 @@ var angle = 0;
 
 var modelViewMatrixLoc;
 
-var vBuffer, cBuffer;
+var vBuffer, cBuffer, nBuffer;
 
 //----------------------------------------------------------------------------
 
-function quad(  a,  b,  c,  d ) {
-    colors.push(vertexColors[a]);
+function quad(a,  b,  c,  d , color) {
+    colors.push(vertexColors[color]);
     points.push(vertices[a]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[color]);
     points.push(vertices[b]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[color]);
     points.push(vertices[c]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[color]);
     points.push(vertices[a]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[color]);
     points.push(vertices[c]);
-    colors.push(vertexColors[a]);
+    colors.push(vertexColors[color]);
     points.push(vertices[d]);
 }
 
-
-function colorCube() {
-    quad( 1, 0, 3, 2 );
-    quad( 2, 3, 7, 6 );
-    quad( 3, 0, 4, 7 );
-    quad( 6, 5, 1, 2 );
-    quad( 4, 5, 6, 7 );
-    quad( 5, 4, 0, 1 );
+function colorCubeRainbow() {
+    quad( 1, 0, 3, 2 ,1);
+    quad( 2, 3, 7, 6, 2);
+    quad( 3, 0, 4, 7, 3);
+    quad( 6, 5, 1, 2, 6);
+    quad( 4, 5, 6, 7, 4);
+    quad( 5, 4, 0, 1, 5);
 }
 
+function colorCube(color){
+    quad( 1, 0, 3, 2, color);
+    quad( 2, 3, 7, 6, color);
+    quad( 3, 0, 4, 7, color);
+    quad( 6, 5, 1, 2, color);
+    quad( 4, 5, 6, 7, color);
+    quad( 5, 4, 0, 1, color);
+}
+
+function colorCylinder() {
+    
+    var x, z, angle = 0;
+    var inc = Math.PI * 2.0 / NumSides;
+    
+    var cylpoints = []
+    var cylcolors = []
+
+    for (var i = 0; i < NumSides; i++){
+        x = 0.5 * Math.cos(angle);
+        z = 0.5 * Math.sin(angle);
+
+        cylpoints.push(vec4( x, 0.5, z, 1.0));
+        cylpoints.push(vec4( x, -0.5, z, 1.0));
+
+        //cycle colors for now
+        cylcolors.push(vertexColors[i%8]);
+        cylcolors.push(vertexColors[i%8]);
+        angle += inc;
+    }
+
+    //wrap first set of points for last face
+    cylpoints.push(cylpoints[0]);
+    cylpoints.push(cylpoints[1]);
+    cylcolors.push(vertexColors[1]);
+    cylcolors.push(vertexColors[1]);
+
+    for(var i = 0; i < NumSides * 2; i += 2){
+        points.push(cylpoints[i])
+        colors.push(cylcolors[i])
+        points.push(cylpoints[i+1])
+        colors.push(cylcolors[i+1])
+        points.push(cylpoints[i+3])
+        colors.push(cylcolors[i+3])
+        points.push(cylpoints[i])
+        colors.push(cylcolors[i])
+        points.push(cylpoints[i+2])
+        colors.push(cylcolors[i+2])
+        points.push(cylpoints[i+3])
+        colors.push(cylcolors[i+3])
+    }
+}
+
+function loadNormalFace(x,y,z){
+    for(var i = 0; i < 6; i++){
+        normals.push([x,y,z])
+    }
+    
+}
+
+function loadNormals() {
+    
+    //temporary
+    for(var i = 0; i < NumSides; i++){
+        loadNormalFace(0,0,1);
+    }
+    
+    //front
+    loadNormalFace(0,0,1);
+    //right
+    loadNormalFace(1,0,0);
+    //bottom
+    loadNormalFace(0,-1,0);
+    //top
+    loadNormalFace(0,1,0);
+    //back
+    loadNormalFace(0,0,-1);
+    //left
+    loadNormalFace(-1,0,0);
+
+
+}
 //____________________________________________
 
 // Remmove when scale in MV.js supports scale matrices
@@ -112,7 +198,7 @@ window.onload = function init() {
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
 
-    gl.clearColor( 1.0, 1.0, 1.0, 1.0 );
+    gl.clearColor( .7, .7, .7, 1 );
     gl.enable( gl.DEPTH_TEST );
 
     //
@@ -122,8 +208,11 @@ window.onload = function init() {
 
     gl.useProgram( program );
 
-    colorCube();
-
+    colorCylinder();
+    //colorCubeRainbow();
+    colorCube(1);
+    loadNormals();
+    
     // Load shaders and use the resulting shader program
 
     program = initShaders( gl, "vertex-shader", "fragment-shader" );
@@ -144,26 +233,58 @@ window.onload = function init() {
     gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
 
     var vColor = gl.getAttribLocation( program, "vColor" );
-    gl.vertexAttribPointer( vColor, 4, gl.FLOAT, false, 0, 0 );
+    gl.vertexAttribPointer( vColor, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vColor );
 
-    document.getElementById("slider1").onchange = function(event) {
+    nBuffer = gl.createBuffer();
+    gl.bindBuffer( gl.ARRAY_BUFFER, nBuffer );
+    gl.bufferData( gl.ARRAY_BUFFER, flatten(normals), gl.STATIC_DRAW );
+
+    var vNormal = gl.getAttribLocation( program, "vNormal" );
+    gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0 );
+    gl.enableVertexAttribArray( vNormal );
+
+    //define our lightsource
+    lightsource = vec3(4.0,4.0,4.0);
+
+    // define lighting parameters
+    
+    //ambient lighting coefficient
+    var ambientCoefficient = gl.getUniformLocation(program, "Ac");
+    gl.uniform1fv(ambientCoefficient,[0.5]);
+
+    var lightPosition = gl.getUniformLocation(program, "lightPosition");
+    gl.uniform3fv(lightPosition, flatten(normalize(lightsource)));
+
+
+
+    //define sliders
+    document.getElementById("slider1").oninput = function(event) {
         theta[0] = event.target.value;
     };
-    document.getElementById("slider2").onchange = function(event) {
+    document.getElementById("slider2").oninput = function(event) {
          theta[1] = event.target.value;
     };
-    document.getElementById("slider3").onchange = function(event) {
+    document.getElementById("slider3").oninput = function(event) {
          theta[2] =  event.target.value;
     };
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
 
-    projectionMatrix = ortho(-10, 10, -10, 10, -10, 10);
+    projectionMatrix = ortho(-5, 5, -5, 5, -10, 10);
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrix) );
 
     render();
 }
+
+
+// function bindRectBuffers(){
+//     gl.bindBuffer( gl.ARRAY_BUFFER, vBuffer );
+//     gl.bufferData( gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW );
+
+//     gl.bindBuffer( gl.ARRAY_BUFFER, cBuffer );
+//     gl.bufferData( gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW );
+// }
 
 //----------------------------------------------------------------------------
 
@@ -173,18 +294,18 @@ function base() {
     var instanceMatrix = mult( translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    // gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
 }
 
 //----------------------------------------------------------------------------
-
 
 function upperArm() {
     var s = scale4(UPPER_ARM_WIDTH, UPPER_ARM_HEIGHT, UPPER_ARM_WIDTH);
     var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
 }
 
 //----------------------------------------------------------------------------
@@ -196,13 +317,15 @@ function lowerArm()
     var instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
 }
 
 //----------------------------------------------------------------------------
 
 
 var render = function() {
+
+    
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
