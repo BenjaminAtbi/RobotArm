@@ -4,7 +4,7 @@ var canvas, gl, program;
 
 var NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
-var NumSides = 6; //number of side on cylinder
+var NumSides = 200; //number of side on cylinder
 
 var points = [];
 var colors = [];
@@ -102,7 +102,7 @@ function Cube(color){
     quad( 5, 4, 0, 1, color);
 }
 
-function Cylinder() {
+function Cylinder(color) {
     
     var x, z, angle = 0;
     var inc = Math.PI * 2.0 / NumSides;
@@ -118,16 +118,16 @@ function Cylinder() {
         cylpoints.push(vec4( x, -0.5, z, 1.0));
 
         //cycle colors for now
-        cylcolors.push(vertexColors[i%8]);
-        cylcolors.push(vertexColors[i%8]);
+        cylcolors.push(vertexColors[color]);
+        cylcolors.push(vertexColors[color]);
         angle += inc;
     }
 
     //wrap first set of points for last face
     cylpoints.push(cylpoints[0]);
     cylpoints.push(cylpoints[1]);
-    cylcolors.push(vertexColors[1]);
-    cylcolors.push(vertexColors[1]);
+    cylcolors.push(vertexColors[color]);
+    cylcolors.push(vertexColors[color]);
 
     for(var i = 0; i < NumSides * 2; i += 2){
         points.push(cylpoints[i])
@@ -146,41 +146,48 @@ function Cylinder() {
 }
 
 function loadShapes(){
-    Cylinder();
+    Cylinder(3);
     loadCylinderNormals();
-    Cube(1);
-    Cube(3);
     Cube(4);
-    loadRectNormals();
+    Cube(1);
     loadRectNormals();
     loadRectNormals();
 }
 
-function loadNormalFace(x,y,z){
+function loadNormalFace(face){
     for(var i = 0; i < 6; i++){
-        normals.push([x,y,z])
+        normals.push(face)
     }
     
 }
 
 function loadRectNormals(){
     //front
-    loadNormalFace(0,0,1);
+    loadNormalFace([0,0,1]);
     //right
-    loadNormalFace(1,0,0);
+    loadNormalFace([1,0,0]);
     //bottom
-    loadNormalFace(0,-1,0);
+    loadNormalFace([0,-1,0]);
     //top
-    loadNormalFace(0,1,0);
+    loadNormalFace([0,1,0]);
     //back
-    loadNormalFace(0,0,-1);
+    loadNormalFace([0,0,-1]);
     //left
-    loadNormalFace(-1,0,0);
+    loadNormalFace([-1,0,0]);
 }
 
 function loadCylinderNormals(){
-    for(var i = 0; i < NumSides; i++){
-        loadNormalFace(0,0,1);
+    var normMatrix = mat4(1,0,0)
+    var angle = 0;
+    var inc = 360 / NumSides;
+
+    for(var i = 0; i < NumSides; i++){    
+        var rotateMatrix = rotate(angle, 0,1,0);
+        var newMatrix = mult(normMatrix, rotateMatrix);
+        var normalFace = newMatrix[0].slice(0,3);
+        loadNormalFace(normalFace);
+        console.log(normalFace);
+        angle += inc;
     }
 }
 //____________________________________________
@@ -306,8 +313,8 @@ function base() {
     var instanceMatrix = mult( translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t) );
-    // gl.drawArrays( gl.TRIANGLES, 0, NumVertices );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, 0, NumSides * 6 );
+    //gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
 }
 
 //----------------------------------------------------------------------------
@@ -317,7 +324,8 @@ function upperArm() {
     var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices * 2, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
+    //gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices * 2, NumVertices );
 }
 
 //----------------------------------------------------------------------------
@@ -329,7 +337,8 @@ function lowerArm()
     var instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
+    //gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
 }
 
 //----------------------------------------------------------------------------
