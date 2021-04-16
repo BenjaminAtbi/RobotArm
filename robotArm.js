@@ -10,6 +10,7 @@ var points = [];
 var colors = [];
 var normals = [];
 var lightsource = [];
+var cameraPos = [];
 
 var vertices = [
     vec4( -0.5, -0.5,  0.5, 1.0 ),
@@ -83,7 +84,7 @@ function quad(a,  b,  c,  d , color) {
     points.push(vertices[d]);
 }
 
-function colorCubeRainbow() {
+function CubeRainbow() {
     quad( 1, 0, 3, 2 ,1);
     quad( 2, 3, 7, 6, 2);
     quad( 3, 0, 4, 7, 3);
@@ -92,7 +93,7 @@ function colorCubeRainbow() {
     quad( 5, 4, 0, 1, 5);
 }
 
-function colorCube(color){
+function Cube(color){
     quad( 1, 0, 3, 2, color);
     quad( 2, 3, 7, 6, color);
     quad( 3, 0, 4, 7, color);
@@ -101,7 +102,7 @@ function colorCube(color){
     quad( 5, 4, 0, 1, color);
 }
 
-function colorCylinder() {
+function Cylinder() {
     
     var x, z, angle = 0;
     var inc = Math.PI * 2.0 / NumSides;
@@ -144,6 +145,17 @@ function colorCylinder() {
     }
 }
 
+function loadShapes(){
+    Cylinder();
+    loadCylinderNormals();
+    Cube(1);
+    Cube(3);
+    Cube(4);
+    loadRectNormals();
+    loadRectNormals();
+    loadRectNormals();
+}
+
 function loadNormalFace(x,y,z){
     for(var i = 0; i < 6; i++){
         normals.push([x,y,z])
@@ -151,13 +163,7 @@ function loadNormalFace(x,y,z){
     
 }
 
-function loadNormals() {
-    
-    //temporary
-    for(var i = 0; i < NumSides; i++){
-        loadNormalFace(0,0,1);
-    }
-    
+function loadRectNormals(){
     //front
     loadNormalFace(0,0,1);
     //right
@@ -170,8 +176,12 @@ function loadNormals() {
     loadNormalFace(0,0,-1);
     //left
     loadNormalFace(-1,0,0);
+}
 
-
+function loadCylinderNormals(){
+    for(var i = 0; i < NumSides; i++){
+        loadNormalFace(0,0,1);
+    }
 }
 //____________________________________________
 
@@ -208,10 +218,7 @@ window.onload = function init() {
 
     gl.useProgram( program );
 
-    colorCylinder();
-    //colorCubeRainbow();
-    colorCube(1);
-    loadNormals();
+    loadShapes();
     
     // Load shaders and use the resulting shader program
 
@@ -244,19 +251,23 @@ window.onload = function init() {
     gl.vertexAttribPointer( vNormal, 3, gl.FLOAT, false, 0, 0 );
     gl.enableVertexAttribArray( vNormal );
 
-    //define our lightsource
-    lightsource = vec3(4.0,4.0,4.0);
-
     // define lighting parameters
+
+    //define our lightsource
+    lightsource = vec3(-2.0,0.5,1.0);
+
+    //define camera position
+    cameraPos = vec3(0.0,0.0,5.0);
     
     //ambient lighting coefficient
     var ambientCoefficient = gl.getUniformLocation(program, "Ac");
-    gl.uniform1fv(ambientCoefficient,[0.5]);
+    gl.uniform1fv(ambientCoefficient,[0.3]);
 
-    var lightPosition = gl.getUniformLocation(program, "lightPosition");
+    var lightPosition = gl.getUniformLocation(program, "vLightPos");
     gl.uniform3fv(lightPosition, flatten(normalize(lightsource)));
 
-
+    var cameraPosition = gl.getUniformLocation(program, "cameraPos");
+    gl.uniform3fv(cameraPosition, flatten(normalize(cameraPos)));
 
     //define sliders
     document.getElementById("slider1").oninput = function(event) {
@@ -272,6 +283,7 @@ window.onload = function init() {
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
 
     projectionMatrix = ortho(-5, 5, -5, 5, -10, 10);
+    //projectionMatrix = ortho(-5, 5, -5, 5, -10, 10);
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrix) );
 
     render();
@@ -305,7 +317,7 @@ function upperArm() {
     var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices * 2, NumVertices );
 }
 
 //----------------------------------------------------------------------------
@@ -317,7 +329,7 @@ function lowerArm()
     var instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
 }
 
 //----------------------------------------------------------------------------
