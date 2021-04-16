@@ -143,6 +143,12 @@ function Cylinder(color) {
         colors.push(cylcolors[i+2])
         points.push(cylpoints[i+3])
         colors.push(cylcolors[i+3])
+        points.push(cylpoints[i])
+        colors.push(cylcolors[i])
+        points.push(cylpoints[i+2])
+        colors.push(cylcolors[i+2])
+        points.push(vec4(0,0.5,0,1.0))
+        colors.push(cylcolors[i+2])
     }
 }
 
@@ -187,7 +193,11 @@ function loadCylinderNormals(){
         var newMatrix = mult(normMatrix, rotateMatrix);
         var normalFace = newMatrix[0].slice(0,3);
         loadNormalFace(normalFace);
-        console.log(normalFace);
+
+        //top polygon
+        for(var j = 0; j < 3; j++){
+            normals.push([0,1,0])
+        }
         angle += inc;
     }
 }
@@ -318,7 +328,7 @@ function base() {
     var instanceMatrix = mult( translate( 0.0, 0.5 * BASE_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv(modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, 0, NumSides * 6 );
+    gl.drawArrays( gl.TRIANGLES, 0, NumSides * 9 );
     //gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
 }
 
@@ -329,7 +339,7 @@ function upperArm() {
     var instanceMatrix = mult(translate( 0.0, 0.5 * UPPER_ARM_HEIGHT, 0.0 ),s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 9 + NumVertices, NumVertices );
     //gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices * 2, NumVertices );
 }
 
@@ -342,7 +352,7 @@ function lowerArm()
     var instanceMatrix = mult( translate( 0.0, 0.5 * LOWER_ARM_HEIGHT, 0.0 ), s);
     var t = mult(modelViewMatrix, instanceMatrix);
     gl.uniformMatrix4fv( modelViewMatrixLoc,  false, flatten(t) );
-    gl.drawArrays( gl.TRIANGLES, NumSides * 6, NumVertices );
+    gl.drawArrays( gl.TRIANGLES, NumSides * 9, NumVertices );
     //gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
 }
 
