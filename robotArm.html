@@ -81,7 +81,7 @@ void main()
 <script type="text/javascript" src="robotArm.js"></script>
 
 <body>
-    <div>
+    <!-- <div>
     body angle -180 <input id="slider1" type="range"
     min="-180" max="180" step="10" value="0"
     />
@@ -100,12 +100,21 @@ void main()
     min="-180" max="180" step="10" value="0"
     />
     180
-    </div><br/>
+    </div><br/> -->
 
+    old X <input id="old_x" type="text">
+    old Y <input id="old_y" type="text">
+    old Z <input id="old_z" type="text">
+    <br>
+    new X <input id="new_x" type="text">
+    new Y <input id="new_y" type="text">
+    new Z <input id="new_z" type="text">
     <div>
-    <input id="viewButton" type="button" value="Swap Perspective"/>
+        <input id="moveButton" type="button" value="Fetch"/>
+    </div><br>
+    <div>
+        <input id="viewButton" type="button" value="Swap Perspective"/>
     </div><br/>
-
 
     <canvas id="gl-canvas" width="512" height="512">
     Oops ... your browser doesn't support the HTML5 canvas element

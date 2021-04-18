@@ -6,11 +6,19 @@ var NumVertices = 36; //(6 faces)(2 triangles/face)(3 vertices/triangle)
 
 var NumSides = 200; //number of side on cylinder
 
+var velocity = .001;
+
 var points = [];
 var colors = [];
 var normals = [];
 var lightsource = [];
 var cameraPos = [];
+
+var basePos = [];
+var oldPos = [];
+var curPos = [];
+var newPos = [];
+var spherePos = [];
 
 var vertices = [
     vec4( -0.5, -0.5,  0.5, 1.0 ),
@@ -67,6 +75,7 @@ var modelViewMatrixLoc;
 var vBuffer, cBuffer, nBuffer;
 
 var TOPVIEW = false;
+var state = 0;
 
 //----------------------------------------------------------------------------
 
@@ -214,6 +223,38 @@ function scale4(a, b, c) {
 }
 
 
+//Calculate positions
+
+function AxisYTheta(pos){
+    if(pos[0] < 0 && pos[2] >= 0) {
+        return -1 * Math.atan(pos[2] / pos[0]);
+    }
+    if(pos[0] >= 0 && pos[2] >= 0) {
+        return radians(180) - Math.atan(pos[2] / pos[0]);
+    } 
+    if(pos[0] < 0 && pos[2] < 0) {
+        return -1 * Math.atan(pos[2] / pos[0]); 
+    }
+    if(pos[0] == 0 && pos[2] < 0) {
+            
+            return -1 * radians(90);
+    }
+    if(pos[0] > 0 && pos[2] < 0) {            
+        return -1 * radians(180) - Math.atan(pos[2] / pos[0]);
+    }
+}
+
+function AxisZTheta(pos){
+    return Math.atan(pos[1] / Math.hypot(pos[0], pos[2]));
+}
+
+function AngleDelta(pos1, pos){
+theta[Base] = AxisYTheta(old) * 180 / Math.PI;
+theta[LowerArm] = extentionAngle - armAdjustAngle;
+theta[UpperArm] = 2 * armAdjustAngle;
+}
+
+// }
 //--------------------------------------------------
 
 
@@ -277,6 +318,9 @@ window.onload = function init() {
     //define camera position
     cameraPos = vec3(0.0,0.0,5.0);
     
+    basePos = vec3(1.5,1.0,1.5);
+    curPos = vec3(basePos);
+
     //ambient lighting coefficient
     var ambientCoefficient = gl.getUniformLocation(program, "Ac");
     gl.uniform1fv(ambientCoefficient,[0.3]);
@@ -288,16 +332,20 @@ window.onload = function init() {
     gl.uniform3fv(cameraPosition, flatten(normalize(cameraPos)));
 
     //define event listeners
-    document.getElementById("slider1").oninput = function(event) {
-        theta[0] = event.target.value;
+    document.getElementById("moveButton").onclick = function(event) {
+        var old = [];
+        var newer = [];
+        old[0] = parseFloat(document.getElementById("old_x").value);
+        old[1] = parseFloat(document.getElementById("old_y").value);
+        old[2] = parseFloat(document.getElementById("old_z").value);
+        newer[0] = parseFloat(document.getElementById("new_x").value);
+        newer[1] = parseFloat(document.getElementById("new_y").value);
+        newer[2] = parseFloat(document.getElementById("new_z").value);
+        startFetch(old, newer);
     };
-    document.getElementById("slider2").oninput = function(event) {
-         theta[1] = event.target.value;
-    };
-    document.getElementById("slider3").oninput = function(event) {
-         theta[2] =  event.target.value;
-    };
+
     document.getElementById("viewButton").onclick = swapView;
+
 
     modelViewMatrixLoc = gl.getUniformLocation(program, "modelViewMatrix");
     
@@ -308,6 +356,7 @@ window.onload = function init() {
     //projectionMatrix = perspective(90,1,0,5);
     gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixSide) );
 
+    PositionArm(basePos);
     render();
 }
 
@@ -356,12 +405,111 @@ function lowerArm()
     //gl.drawArrays( gl.TRIANGLES, NumSides * 6 + NumVertices, NumVertices );
 }
 
+function swapView() {
+    if(TOPVIEW){
+        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixSide));
+        cameraPos = vec3(0.0,0.0,5.0);
+        TOPVIEW = false;
+    } else {
+        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixTop));
+        cameraPos = vec3(0.0,5.0,0.0);
+        TOPVIEW = true;
+    }
+}
+
+function startFetch(old, newer){
+    var extentionLength = Math.hypot(old[0],old[1], old[2]);
+
+    if(extentionLength > UPPER_ARM_HEIGHT * 2){
+        console.log("old position out of reach");
+        return;
+    }
+
+    if(state != 0){
+        return;
+    }
+
+    oldPos = old;
+    spherePos = old;
+    newPos = newer;
+    state = 1;
+}
+
+function PositionArm(pos){
+    var extentionLength = Math.hypot(pos[0],pos[1], pos[2]);
+    var extentionAngle = 90 - AxisZTheta(pos) * 180 / Math.PI;
+    var armAdjustAngle = Math.acos( (extentionLength/2) / LOWER_ARM_HEIGHT) * 180 / Math.PI;
+
+    theta[Base] = AxisYTheta(pos) * 180 / Math.PI;
+    theta[LowerArm] = extentionAngle - armAdjustAngle;
+    theta[UpperArm] = 2 * armAdjustAngle;
+}
+
+function updatePos(target){
+    var done = true;
+
+    var distance = velocity * delta_time;
+
+    for (var i = 0; i < 3; i++){
+        if(curPos[i] < target[i]){
+            if(target[i] - curPos[i] < distance){
+                curPos[i] = target[i];
+            } 
+            else {
+                curPos[i] += distance;
+            }
+            done = false;
+        }
+        if(curPos[i] > target[i]){
+            if(curPos[i] - target[i] < distance){
+                curPos[i] = target[i];
+            } 
+            else {
+                curPos[i] -= distance;
+            }
+            done = false;
+        }
+    }
+    return done;
+}
+
+function fetchSequence(){
+    switch(state){
+        case 0: break;
+        case 1:
+            if(updatePos(oldPos)){
+                state = 2;
+                spherePos = oldPos;
+            }
+            PositionArm(curPos);
+            break;
+        case 2:
+            if(updatePos(newPos)){
+                state = 3;
+            }
+            PositionArm(curPos);
+            spherePos = vec3(curPos);
+            break;
+        case 3:
+            if(updatePos(basePos)){
+                state = 0;
+            }
+            PositionArm(curPos);
+            break;
+        }       
+}
 //----------------------------------------------------------------------------
 
+var last_frame = 0;
+var delta_time = 0;
 
-var render = function() {
+var render = function(now) {
+
+    delta_time = now - last_frame;
 
     gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+
+    fetchSequence();
 
     modelViewMatrix = rotate(theta[Base], 0, 1, 0 );
     base();
@@ -374,15 +522,11 @@ var render = function() {
     modelViewMatrix  = mult(modelViewMatrix, rotate(theta[UpperArm], 0, 0, 1) );
     upperArm();
 
+    modelViewMatrix = rotate(0, 0, 1, 0);
+    modelViewMatrix = mult(modelViewMatrix, translate(spherePos));
+    base();
+
+    last_frame = now;
     requestAnimFrame(render);
 }
 
-function swapView() {
-    if(TOPVIEW){
-        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixSide));
-        TOPVIEW = false;
-    } else {
-        gl.uniformMatrix4fv( gl.getUniformLocation(program, "projectionMatrix"),  false, flatten(projectionMatrixTop));
-        TOPVIEW = true;
-    }
-}
