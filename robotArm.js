@@ -417,11 +417,28 @@ function swapView() {
     }
 }
 
-function startFetch(old, newer){
-    var extentionLength = Math.hypot(old[0],old[1], old[2]);
+function respectsBounds(position){
+    return Math.hypot(position[0],position[1], position[2]) <= (UPPER_ARM_HEIGHT + LOWER_ARM_HEIGHT) ;
+}
 
-    if(extentionLength > UPPER_ARM_HEIGHT * 2){
-        console.log("old position out of reach");
+function startFetch(old, newer){
+    
+    var err = "";
+    var errFlag = false;
+
+    if( !respectsBounds(old)){
+        err += "old position out of reach <br>";
+        errFlag = true;
+    }
+    
+    if( !respectsBounds(newer)){
+        err += "new position out of reach";
+        errFlag = true;
+    }
+
+    if(errFlag){
+        var errElement = document.getElementById('error');
+        errElement.innerHTML = err;
         return;
     }
 

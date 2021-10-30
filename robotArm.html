@@ -102,16 +102,23 @@ void main()
     180
     </div><br/> -->
 
-    old X <input id="old_x" type="text">
-    old Y <input id="old_y" type="text">
-    old Z <input id="old_z" type="text">
+    <div style="max-width:600px;">
+        <p style="font-weight: bold;">Input two 3d quoordinates: the position from which the arm receives the object, and the position for the arm to move the object to. The arm extends from position (0,0,0) and each arm section has a length of 2. You must specify quoordinates within the arm's reach (hypotenuse of quoordinates <= 4)</p>
+    </div>
+
+    old X <input id="old_x" type="text" value="1">
+    old Y <input id="old_y" type="text" value="0.5">
+    old Z <input id="old_z" type="text" value="1">
     <br>
-    new X <input id="new_x" type="text">
-    new Y <input id="new_y" type="text">
-    new Z <input id="new_z" type="text">
+    new X <input id="new_x" type="text" value="-2">
+    new Y <input id="new_y" type="text" value="-0.5">
+    new Z <input id="new_z" type="text" value="1.5">
     <div>
         <input id="moveButton" type="button" value="Fetch"/>
     </div><br>
+    <div>
+        <p id="error" style="font-weight: bold;"> </p>
+    </div>
     <div>
         <input id="viewButton" type="button" value="Swap Perspective"/>
     </div><br/>
